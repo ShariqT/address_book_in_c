@@ -61,8 +61,10 @@ void initMenu(int contacts){
 
 
 void addNewContact(){
+	char name[];
 	printf("Adding a new contact. \n");
 	printf("Enter name: ");
+	scanf("%s", name);
 	
 }
 
