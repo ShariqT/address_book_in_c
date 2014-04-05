@@ -1,107 +1,158 @@
 #include <stdio.h>
 #include <string.h>
-const char *dataFile = "addresses.dat";
-typedef struct{
-	char *name;
-	char *address;
-	char *city;
-	char *state;
-	int  zipcode;
-} ADDRESS_ENTRY;
 
-ADDRESS_ENTRY createNewAddress(char name[], char address_line1[], char address_line2[]);
-void readDataLine(FILE *addresses_from_file);
-void initMenu(int contacts);
-int checkAnswer(char answer[]);
-void addNewContact();
 
-int num_of_contacts;
-//we hold 20 addresses at one time for v1
-ADDRESS_ENTRY my_addresses[20];
+//available arguments to pass into the command line
+// --list :  to list all of the addresses currently stored
+// --edit <num> : to edit a particular saved addresses
+// --new <string> : to add a new address to be saved
 
-int main(){
-	FILE *addresses_from_file;
+typedef struct {
+	char name[20];
+	char address[100];
+	char city[20];
+	char state[2];
+	char zipcode[5];
+} ADDRESS;
 
-	//let's check to see if we have addresses in the data file
-	num_of_contacts = 0;	
-	if( (addresses_from_file = fopen(dataFile, "r")) == NULL){
-		//the addresses file doesn't exist, this is the first time the 
-		//user is using this thing
-		initMenu(num_of_contacts);
-	}else{
-		//we have some addresses, let's put them into structs
-		readDataLine(addresses_from_file);
-		initMenu(num_of_contacts);
-	}
+FILE *address_fp;
 
-}
+ADDRESS userAddresses[20];
 
-void initMenu(int contacts){
-	char answer[1];
-	printf("\n");
-	printf("You can edit entries by pressing 'E' \n");
-	printf("You can create new entries by pressing 'N' \n");
-	printf("Total number of contacts: %i \n", contacts);
-	scanf("%s", answer);
-	if( checkAnswer(answer) == 0 ){
-		printf("That is not a recoginzed command!");
-		initMenu(contacts);
-	}else{
-		switch(answer[0]){
-			case 'E':
-				printf("We are doing the editing function");
-			break;
-			case 'N':
-				printf("We are doing the new function");
-				addNewContact();
-			break;
+void printHelpScreen();
+void listFunction();
+void newFunction(char inputString[]);
+void editFunction( int index);
+
+int main(int argc, char *argv[]){
+	if(argc != 1){
+		//we'll only have three arguments at most, so let's check for that
+		if(argc > 3){
+			printf("Too many arguments! \n");
+			return 1;
 		}
+
+		if( strcmp(argv[1], "--list") == 0){
+			if(argc == 3){
+				printf("--list flag does not take arguments! \n");
+				return 1;
+			}
+
+			listFunction();
+		}
+
+		if( strcmp(argv[1], "--edit") == 0){
+			if( isdigit(*argv[2]) == 0 ){
+				printf("--edit flag argument needs to be a number! \n");
+				return 1;
+			}
+
+			editFunction( atoi(argv[2]) );
+		}
+
+		if( strcmp(argv[1], "--new") == 0){
+			if(isalpha(*argv[2]) == 0){
+				printf("--new flag argument needs to be letters and numbers! \n");
+			}
+
+			newFunction(argv[2]);
+		}
+
+
+	}else{
+		printHelpScreen();
 	}
+
 }
 
+void printHelpScreen(){
+	printf("These are the available commands for address book. \n");
+	printf("\t \t --list : to list all of the addresses currently saved \n");
+	printf("\t \t --edit <number> : to edit a particular saved address \n");
+	printf("\t \t --new <address_string> : to add a new address to be saved \n");
+	printf("A valid address string will be comma separated with no spaces \n");
+	printf("An example of a address string is John Doe,1234 Anytown Street,New York,NY,12345");
+}
 
-void addNewContact(){
-	char name[];
-	printf("Adding a new contact. \n");
-	printf("Enter name: ");
-	scanf("%s", name);
+void listFunction(){
+	address_fp = fopen("addresses.data", "r");
+	char line[200];
+	char name[20];
+	char address[100];
+	char city[20];
+	char state[2];
+	char zipcode[5];
+	int i = 0;
+	int commaCount = 0;
+	int address_count = 0;
+	int a;
+	char c;
+	if(address_fp == NULL){
+		printf("Error! Can't open data file to read addresses. \n");
+		return;
+	}
+
+		
+	while( fgets(line, 200, address_fp) != 0){
+	
+		ADDRESS new_addy;
+		
+		for (a = 0 ; a < 200; a++){
+			//first check to see if it is a comma
+			if(line[a] == ','){
+				commaCount++;
+				i=0;
+			}
+
+			switch(commaCount){
+				//this means we are in the first part of the string
+				case 0:
+					new_addy.name[i] = line[a];
+					i++;
+				break;
+				case 1:
+					if(line[a] != ','){
+						new_addy.address[i] = line[a];
+						i++;
+					}
+				break;
+				case 2:
+					if(line[a] != ','){
+						new_addy.city[i] = line[a];
+						i++;
+					}
+				break;
+				case 3:
+					if(line[a] != ','){
+						new_addy.state[i] = line[a];
+						i++;
+					}
+				break;
+				case 4:
+					if(line[a] != ','){
+						new_addy.zipcode[i] = line[a];
+						i++;
+					}
+				break;
+			}
+		}
+
+		userAddresses[address_count] = new_addy;
+		address_count++;
+	}
+
+	printf(" the first guy name is %s \n", userAddresses[0].address);
+
+	printf(" the first guy name is %s \n", userAddresses[1].address);
 	
 }
 
-int checkAnswer(char answer[]){
-	if((char) answer[0] != 'E' && (char) answer[0] != 'N'){
-		return 0;
-	}else{
-		return 1;
-	}
+void editFunction(int index){
+	printf("editing %i", index);
 }
 
 
-void readDataLine(FILE *addresses_from_file){
-	char line[100];
-	char addyline1[100];
-	char addyline2[100];
-	char name[100];
-	int i = 0;
-	while( (fgets(line, 100, addresses_from_file)) != 0){
-		sscanf(line, "%[^\t\n] %[^\t\n] %[^\t\n]", name, addyline1, addyline2);
-		my_addresses[i] = createNewAddress(name, addyline1, addyline2);
-		num_of_contacts++;
-	}
+void newFunction(char inputString[]){
+	printf("the input string is %s", inputString);
 }
 
-ADDRESS_ENTRY createNewAddress(char name[], char addyline1[], char addyline2[]){
-	ADDRESS_ENTRY new_address;
-	char city[100];
-	char state[10];
-	char zip[5];
-	char fun_name[100];
-
-	new_address.name = name;
-	new_address.address = addyline1;
-
-	sscanf(addyline2, "%[^,\n\t],%[^,\n\t],%[^\n\t]", city, state, zip );
-	new_address.city = city;
-	new_address.state = state;
-	new_address.zipcode = (int)zip;
-}
