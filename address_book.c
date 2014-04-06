@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 
 //available arguments to pass into the command line
@@ -11,18 +12,21 @@ typedef struct {
 	char name[20];
 	char address[100];
 	char city[20];
-	char state[2];
-	char zipcode[5];
+	char state[3];
+	char zipcode[6];
 } ADDRESS;
 
 FILE *address_fp;
 
 ADDRESS userAddresses[20];
-
+int address_count = 0;
 void printHelpScreen();
 void listFunction();
 void newFunction(char inputString[]);
 void editFunction( int index);
+void printUserAddresses();
+char str_slice(char input[], int start, int stop);
+ADDRESS createAddressEntry( char line[]);
 
 int main(int argc, char *argv[]){
 	if(argc != 1){
@@ -75,75 +79,20 @@ void printHelpScreen(){
 }
 
 void listFunction(){
-	address_fp = fopen("addresses.data", "r");
-	char line[200];
-	char name[20];
-	char address[100];
-	char city[20];
-	char state[2];
-	char zipcode[5];
-	int i = 0;
-	int commaCount = 0;
-	int address_count = 0;
-	int a;
-	char c;
+	address_fp = fopen("addresses.dat", "r");
+	char line[100];
 	if(address_fp == NULL){
 		printf("Error! Can't open data file to read addresses. \n");
 		return;
 	}
 
 		
-	while( fgets(line, 200, address_fp) != 0){
-	
-		ADDRESS new_addy;
-		
-		for (a = 0 ; a < 200; a++){
-			//first check to see if it is a comma
-			if(line[a] == ','){
-				commaCount++;
-				i=0;
-			}
-
-			switch(commaCount){
-				//this means we are in the first part of the string
-				case 0:
-					new_addy.name[i] = line[a];
-					i++;
-				break;
-				case 1:
-					if(line[a] != ','){
-						new_addy.address[i] = line[a];
-						i++;
-					}
-				break;
-				case 2:
-					if(line[a] != ','){
-						new_addy.city[i] = line[a];
-						i++;
-					}
-				break;
-				case 3:
-					if(line[a] != ','){
-						new_addy.state[i] = line[a];
-						i++;
-					}
-				break;
-				case 4:
-					if(line[a] != ','){
-						new_addy.zipcode[i] = line[a];
-						i++;
-					}
-				break;
-			}
-		}
-
-		userAddresses[address_count] = new_addy;
+	while( fgets(line, 100, address_fp) != 0){
+		userAddresses[address_count] = createAddressEntry(line);
 		address_count++;
 	}
-
-	printf(" the first guy name is %s \n", userAddresses[0].address);
-
-	printf(" the first guy name is %s \n", userAddresses[1].address);
+	printf("%s \n", userAddresses[0].state);
+	printUserAddresses();
 	
 }
 
@@ -154,5 +103,44 @@ void editFunction(int index){
 
 void newFunction(char inputString[]){
 	printf("the input string is %s", inputString);
+}
+
+
+void printUserAddresses(){
+	int i;
+	for(i = 0; i < address_count; i++){
+		printf("%i) %s, %s, %s, %s %s \n", i, userAddresses[i].name, userAddresses[i].address, 
+											userAddresses[i].city, userAddresses[i].state, 
+											userAddresses[i].zipcode);
+	}
+
+	return;
+}
+
+ADDRESS createAddressEntry(char line[]){
+	char name[20];
+	char address[100];
+	char city[20];
+	char state[3];
+	char statetmp[2];
+	char zipcode[6];
+	int a,b = 100;
+	ADDRESS new_addy;
+
+		sscanf(line, "%[^','\t\n],%[^','\t\n],%[^','\t\n],%[^','\t\n],%[^','\t\n]", name, address, city, statetmp, zipcode);
+		
+		//this is a noob hack because scanf was reading way more information than
+		//I wanted, so I just sliced out the first two elements of what came from sscanf
+		//and put it in another variable to copy over to the new_addy struct
+		state[0] = statetmp[0];
+		state[1] = statetmp[1];
+		state[2] = '\0';
+		
+		strcpy(new_addy.name, name);
+		strcpy(new_addy.address, address);
+		strcpy(new_addy.city, city);
+		strcpy(new_addy.state, state);
+		strcpy(new_addy.zipcode, zipcode);
+	return new_addy;
 }
 
